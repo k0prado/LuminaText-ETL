@@ -1,0 +1,50 @@
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: lumina_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: lumina_mongo_express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lumina_app
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+    working_dir: /app
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      DATABASE_NAME: ${DATABASE_NAME}
+    depends_on:
+      - mongodb
+    command: ["tail", "-f", "/dev/null"]
+    tty: true
+    ports:
+      - "8000:8000"
+
+volumes:
+  mongo_data:
+    name: mongo_data
