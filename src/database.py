@@ -1,5 +1,3 @@
-"""Database access layer for the LuminaText ETL application."""
-
 from __future__ import annotations
 
 from typing import Final, Optional
@@ -14,13 +12,7 @@ _database: Optional[Database] = None
 
 
 def get_database() -> Database:
-    """Return a shared PyMongo Database instance.
 
-    The module caches the MongoClient and Database objects to avoid creating a
-    new connection client on each call. This allows PyMongo to leverage its
-    internal connection pool while keeping the access layer simple and
-    deterministic.
-    """
     global _client, _database
 
     if _database is None:

@@ -56,5 +56,4 @@ class WorkModelExtractor(TextExtractor):
         if not text:
             return None
         match = self.pattern.search(text)
-        # Retorna o termo padronizado em minúsculas se houver match
         return match.group(0).lower().strip() if match else None
