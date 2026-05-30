@@ -15,6 +15,8 @@ from src.pre_processing.nlp_pipeline import (
     StopwordsProcessor,
     LemmatizerProcessor
 )
+from src.pre_processing.vectorizer import TfidfTextVectorizer
+from src.analytics.text_analytics import JobTextAnalytics
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -73,12 +75,28 @@ def run_pipeline():
     if processed_documents:
         try:
             collection.delete_many({})
-            result = collection.insert_many(processed_documents)
-            logger.info(f"Sucesso! {len(result.inserted_ids)} vagas com NLP salvas no MongoDB.")
+            collection.insert_many(processed_documents)
+            logger.info(f"Sucesso! {len(processed_documents)} vagas salvas no MongoDB.")
         except Exception as e:
             logger.error(f"Erro ao salvar dados no MongoDB: {e}")
-            
-    logger.info("Pipeline ETL e NLP finalizado com sucesso!")
+            return
+
+    logger.info("Iniciando etapa de Mineração de Texto e Vetorização...")
+    
+    stored_vacancies = list(collection.find({}, {"nlp_processed.lemmatized_base_text": 1}))
+    lemmatized_corpus = [v["nlp_processed"]["lemmatized_base_text"] for v in stored_vacancies if "nlp_processed" in v]
+    
+    analytics = JobTextAnalytics()
+    top_keywords = analytics.get_top_keywords(lemmatized_corpus, top_n=5)
+    
+    logger.info(f"Top 5 Termos mais frequentes nas vagas: {top_keywords}")
+    
+    vectorizer = TfidfTextVectorizer()
+    tfidf_matrix = vectorizer.fit_transform(lemmatized_corpus)
+    features = vectorizer.get_feature_names()
+    
+    logger.info(f"Matriz TF-IDF gerada com sucesso! Shape: {len(tfidf_matrix)}x{len(features)}")
+    logger.info("Pipeline ETL, NLP e Analytics finalizado com sucesso!")
 
 if __name__ == "__main__":
     run_pipeline()
