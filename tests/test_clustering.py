@@ -1,23 +1,35 @@
 import pytest
+from src.pre_processing.vectorizer import TfidfTextVectorizer
 from src.models.clustering import VacancyClusteringModel
 
-def test_kmeans_clustering_returns_correct_labels_length():
-    model = VacancyClusteringModel(n_clusters=2)
-    mock_tfidf_matrix = [
-        [1.0, 0.0, 0.0],
-        [0.9, 0.1, 0.0],
-        [0.0, 0.2, 0.8],
-        [0.0, 0.0, 1.0]
-    ]
+def test_model_initialization_and_categories():
+    """Garante que o modelo inicializa com o vetorizador e possui as 25 categorias."""
+    vectorizer = TfidfTextVectorizer()
+    model = VacancyClusteringModel(vectorizer)
     
-    labels = model.fit_predict(mock_tfidf_matrix)
-    
-    assert len(labels) == 4
-    assert isinstance(labels[0], int)
+    assert len(model.categories) == 25
+    assert "Engenheiro de Dados" in model.categories
+    assert "Especialista em IA Generativa" in model.categories
 
-def test_clustering_handles_insufficient_data():
-    model = VacancyClusteringModel(n_clusters=3)
-    mock_matrix = [[1.0, 0.0]]
+def test_model_predicts_correct_category_by_similarity():
+    """Valida se o modelo classifica corretamente com base nas palavras-chave (âncoras)."""
+    vectorizer = TfidfTextVectorizer()
+    model = VacancyClusteringModel(vectorizer)
     
-    labels = model.fit_predict(mock_matrix)
-    assert labels == [0]
+    # Testando uma vaga com forte viés de IA Generativa
+    text_ai_gen = "vaga para especialista focado em llm gpt prompt engineering e langchain"
+    predicted_ai = model.predict_category(text_ai_gen)
+    assert predicted_ai == "Especialista em IA Generativa"
+    
+    # Testando uma vaga com forte viés de Engenharia de Dados
+    text_data = "procuramos profissional para criar pipeline etl usando spark airflow e sql"
+    predicted_data = model.predict_category(text_data)
+    assert predicted_data == "Engenheiro de Dados"
+
+def test_model_handles_empty_text_gracefully():
+    """Garante que o modelo não quebra e retorna uma categoria padrão para textos vazios."""
+    vectorizer = TfidfTextVectorizer()
+    model = VacancyClusteringModel(vectorizer)
+    
+    predicted = model.predict_category("")
+    assert predicted in model.categories

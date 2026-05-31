@@ -51,13 +51,15 @@ class VacancyClusteringModel:
         }
         
         anchor_texts = [anchors[cat] for cat in self.categories]
-        self.anchor_matrices = self.vectorizer.vectorizer.fit_transform(anchor_texts).toarray()
+        anchor_matrix_list = self.vectorizer.fit_transform(anchor_texts)
+        # ensure we have a numpy array for similarity calculations
+        self.anchor_matrices = np.array(anchor_matrix_list)
 
     def predict_category(self, lemmatized_text: str) -> str:
         if not lemmatized_text.strip():
             return "Desenvolvedor Backend"
-            
-        vacancy_matrix = self.vectorizer.vectorizer.transform([lemmatized_text]).toarray()
+        vacancy_matrix_list = self.vectorizer.transform([lemmatized_text])
+        vacancy_matrix = np.array(vacancy_matrix_list)
         similarities = cosine_similarity(vacancy_matrix, self.anchor_matrices)
         best_match_idx = np.argmax(similarities)
         
